@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<!--
+  portfolio/index.html — 포트폴리오 5차 (자산 최대활용·간판 심화·전시 강화, 2026-06-07)
+  구조색: 네이비 #1E3A5F / 강조·행동색: 테라코타 코랄 #BC4A2E (버튼·링크·상태배지(진행중)·탭·활성칩) — 면적 5~10%
+  베이스: 오프화이트 #F8FAFC, 카드는 흰색. 카드 그림자 없음 — 단 "스샷 프레임"만 미세 그림자 1단계 허용(전시 강화).
+  모션: 진행바 + fade-up(1회·prefers-reduced-motion 존중·히어로 즉시). 탭 전환·필터칩·라이트박스(클릭 확대) JS.
+  간판: PyeonipCheck(3단계 탭+GA 실사용자 검증·왜→어떻게→장애대응→배운점) / SmartFactory(아키텍처·대시보드·하드웨어·트러블슈팅 4탭, 갤러리).
+  금지: 그라데이션·네온·이모지(→SVG). GA는 편입생 타깃 맥락 명시 하에 사용. 구현 디테일(safeString·±1cm 등) 미포함.
+-->
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>최승범 — 포트폴리오</title>
+<style>
+  :root{
+    --navy:#1E3A5F; --accent:#BC4A2E; --accent-dk:#A23F27;
+    --ink:#1F2933; --slate:#46535F; --muted:#7A8694;
+    --rule:#C9D2DC; --hair:#E7ECF1;
+    --bg:#FFFFFF; --base:#F8FAFC; --soft:#F4F7FA; --bar:#EEF2F6;
+    --shot:0 1px 4px rgba(30,58,95,.10);     /* 스샷 전용 미세 그림자 1단계 */
+    --mono:"Consolas","D2Coding","SFMono-Regular",monospace;
+    --maxw:880px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{font-family:"Pretendard","Pretendard Variable",-apple-system,"Segoe UI","Malgun Gothic",sans-serif;
+    color:var(--ink);background:var(--base);line-height:1.65;font-size:15px;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;}
+  img{display:block;max-width:100%;}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px;}
+
+  .progress{position:fixed;top:0;left:0;height:3px;width:0;background:var(--navy);z-index:100;will-change:width;}
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity .4s ease-out,transform .4s ease-out;}
+  .reveal.in{opacity:1;transform:none;}
+  /* 핵심 프로젝트 카드 — 살짝 겹쳤다 펴지며 등장(강화) */
+  .proj.reveal{transform:translateY(44px) scale(.985);transition:opacity .5s ease-out,transform .5s ease-out;}
+  .proj.reveal.in{opacity:1;transform:none;}
+  @media(prefers-reduced-motion:reduce){.reveal,.proj.reveal{opacity:1;transform:none;transition:none;}html{scroll-behavior:auto;}}
+
+  section{padding:48px 0;}
+  .sec-label{font-size:15px;font-weight:800;letter-spacing:1.5px;color:var(--navy);text-transform:uppercase;
+             margin-bottom:28px;display:flex;align-items:baseline;gap:12px;}
+  .sec-label::before{content:attr(data-num);font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent);letter-spacing:0;}
+
+  .st{font-size:11px;font-weight:700;letter-spacing:.3px;display:inline-flex;align-items:center;gap:4px;}
+  .st::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;}
+  .st.prog{color:var(--accent);}
+  .st.done{color:var(--muted);}
+
+  .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;}
+  .btn{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600;padding:10px 16px;border-radius:3px;
+       border:1px solid var(--accent);transition:background .15s,color .15s;cursor:pointer;font-family:inherit;}
+  .btn#emailCopy{letter-spacing:.1px;}
+  .btn svg{width:15px;height:15px;}
+  .btn-solid{background:var(--accent);color:#fff;}
+  .btn-solid:hover{background:var(--accent-dk);border-color:var(--accent-dk);}
+  .btn-ghost{background:transparent;color:var(--accent);}
+  .btn-ghost:hover{background:var(--accent);color:#fff;}
+
+  /* 브라우저 목업 프레임 — 전시 강화(약간 크게 + 미세 그림자) */
+  .frame{border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:#fff;box-shadow:var(--shot);}
+  .frame-bar{display:flex;align-items:center;gap:7px;padding:10px 13px;background:var(--bar);border-bottom:1px solid var(--rule);}
+  .frame-bar .dot{width:9px;height:9px;border-radius:50%;background:#C2CCD6;}
+  .frame-body{background:var(--soft);}
+  .frame-body img{width:100%;display:block;}
+  img[data-zoom]{cursor:zoom-in;}
+  .panel-cap{margin-top:8px;font-size:12.5px;color:var(--slate);line-height:1.5;}
+
+  /* 갤러리(한 탭에 여러 뷰) */
+  .gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+  .g-item{border:1px solid var(--rule);border-radius:7px;overflow:hidden;background:var(--soft);box-shadow:var(--shot);}
+  .g-item img{width:100%;height:128px;object-fit:cover;object-position:top;display:block;cursor:zoom-in;}
+
+  /* ── ① 히어로 ── */
+  .hero{padding:96px 0 64px;}
+  .hero .name{font-size:14px;font-weight:600;color:var(--muted);letter-spacing:.5px;margin-bottom:16px;}
+  .hero h1{font-size:34px;font-weight:800;line-height:1.24;letter-spacing:-.8px;color:var(--navy);}
+  .badges{margin-top:22px;display:flex;flex-wrap:wrap;gap:8px 0;align-items:center;font-size:13px;color:var(--slate);}
+  .badges .b{font-weight:600;}
+  .badges .sep{color:var(--rule);margin:0 12px;}
+
+  /* ── ② About ── */
+  .about-card{background:var(--bg);border:1px solid var(--hair);border-radius:8px;padding:24px 26px;max-width:660px;}
+  .about-card p{font-size:16px;color:var(--slate);line-height:1.78;}
+  .about-card p + p{margin-top:12px;}
+
+  /* ── ③ 핵심 프로젝트 ── */
+  .proj{background:var(--bg);border:1px solid var(--hair);border-radius:10px;padding:22px;transition:border-color .15s;--mcol:1.1fr;}
+  .proj:hover{border-color:var(--rule);}
+  .proj + .proj{margin-top:24px;}
+  .tabs{display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid var(--hair);margin-bottom:14px;}
+  .tab{font-size:13px;font-weight:600;color:var(--muted);padding:8px 13px;cursor:pointer;background:none;border:none;
+       border-bottom:3px solid transparent;margin-bottom:-1px;font-family:inherit;transition:color .15s;}
+  .tab:hover{color:var(--slate);}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .proj-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:4px;}
+  .proj-head h3{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.3px;}
+  .proj-tag{font-size:11px;color:var(--muted);letter-spacing:.2px;}
+  .blocks{margin-top:16px;display:grid;gap:14px;}
+  .block{display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:start;}
+  .block .k{font-size:12px;font-weight:800;color:var(--navy);padding-top:2px;}
+  .block .v{font-size:14.5px;color:var(--slate);line-height:1.6;}
+  .blocks .block:first-child .v{color:var(--ink);font-weight:500;}  /* 핵심 결과/배경 강조 */
+
+  /* 실사용자 검증 블록(PyeonipCheck) */
+  .verify{margin-top:16px;padding:14px;border:1px solid var(--hair);border-radius:8px;background:var(--base);
+          display:grid;gap:12px;}
+  .verify .k{font-size:12px;font-weight:800;color:var(--navy);}
+  .verify p{font-size:13.5px;color:var(--slate);line-height:1.55;}
+  .verify .frame{margin-top:4px;}
+  .verify-stats{display:flex;gap:30px;}
+  .stat{display:flex;flex-direction:column;}
+  .stat .count{font-family:var(--mono);font-size:36px;font-weight:800;color:var(--accent);line-height:1;letter-spacing:-1px;}
+  .stat span{font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:.3px;}
+
+  .proj-foot{margin-top:18px;padding-top:14px;border-top:1px solid var(--hair);
+             display:flex;flex-wrap:wrap;align-items:center;gap:12px;justify-content:space-between;}
+  .stack{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:-.2px;}
+  .repo{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent);}
+  .repo:hover{color:var(--accent-dk);}
+  .repo svg{width:15px;height:15px;}
+  .repo.muted{color:var(--muted);font-weight:500;}
+  .repo.muted:hover{color:var(--muted);}
+
+  /* ── ④ 활동·리더십 ── */
+  .acts{list-style:none;background:var(--bg);border:1px solid var(--hair);border-radius:8px;}
+  .acts li{padding:18px 22px;}
+  .acts li + li{border-top:1px solid var(--hair);}
+  .act-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;margin-bottom:5px;}
+  .act-t{font-size:15px;font-weight:700;color:var(--ink);}
+  .act-meta{font-size:12px;color:var(--muted);font-family:var(--mono);letter-spacing:-.2px;}
+  .acts p{font-size:14px;color:var(--slate);line-height:1.62;}
+
+  /* ── ⑤ 그 외 작업 ── */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .chip{font-size:12.5px;font-weight:600;color:var(--slate);background:var(--bg);border:1px solid var(--rule);
+        border-radius:999px;padding:5px 14px;cursor:pointer;font-family:inherit;transition:background .15s,border-color .15s,color .15s;}
+  .chip:hover{border-color:var(--muted);}
+  .chip.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .mini.hide{display:none;}
+  .mini-grid{display:grid;gap:14px;}
+  .mini{border:1px solid var(--hair);background:#fff;border-radius:8px;padding:16px;display:flex;gap:14px;align-items:flex-start;}
+  .mini-thumb{flex:none;width:84px;height:60px;border:1px solid var(--rule);background:var(--soft);overflow:hidden;border-radius:5px;}
+  .mini-thumb img{width:100%;height:100%;object-fit:cover;}
+  .mini-thumb.empty{display:flex;align-items:center;justify-content:center;}
+  .mini-thumb.empty svg{width:22px;height:22px;color:var(--rule);}
+  .mini-body{min-width:0;flex:1;}
+  .mini-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;}
+  .mini-head h4{font-size:15px;font-weight:700;color:var(--ink);}
+  .mini-desc{font-size:13px;color:var(--slate);margin-top:4px;line-height:1.55;}
+  .mini-foot{margin-top:8px;font-size:12.5px;}
+
+  /* ── 클로징 ── */
+  .closing{border-top:2px solid var(--navy);}
+  .closing h2{font-size:22px;font-weight:800;color:var(--navy);line-height:1.4;letter-spacing:-.4px;max-width:620px;}
+  .contact{margin-top:22px;display:flex;flex-wrap:wrap;gap:10px;}
+  footer{padding:28px 0;font-size:11.5px;color:var(--muted);border-top:1px solid var(--hair);}
+
+  /* 라이트박스 */
+  .lightbox{position:fixed;inset:0;background:rgba(15,23,32,.86);display:none;align-items:center;justify-content:center;z-index:200;padding:24px;}
+  .lightbox.open{display:flex;}
+  .lightbox img{max-width:96%;max-height:92%;border-radius:6px;}
+  .lb-close{position:absolute;top:16px;right:20px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+            cursor:pointer;color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:50%;}
+  .lb-close svg{width:16px;height:16px;}
+
+  /* ── 데스크톱 ── */
+  @media(min-width:860px){
+    body{font-size:16px;}
+    section{padding:72px 0;}
+    .hero{padding:120px 0 84px;}
+    .hero h1{font-size:54px;}
+    .proj-head h3{font-size:27px;}
+    /* 카드 리듬: feature(간판) 이미지 크게 / compact 작게, 좌우 교차(flip) */
+    .proj{display:grid;grid-template-columns:var(--mcol) 1fr;gap:44px;align-items:start;padding:30px;}
+    .proj.feature{--mcol:1.35fr;}
+    .proj.compact{--mcol:0.82fr;}
+    .proj.flip{grid-template-columns:1fr var(--mcol);}
+    .proj.flip .proj-media{grid-column:2;grid-row:1;}
+    .proj.flip .proj-text{grid-column:1;grid-row:1;}
+    .proj-media{position:sticky;top:28px;}
+    .proj-text{min-width:0;}
+    .gallery{grid-template-columns:repeat(3,1fr);}
+    .mini-grid{grid-template-columns:1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+
+<!-- ① 히어로 (즉시 표시 — 페이드 X) -->
+<header class="hero">
+  <div class="wrap">
+    <div class="name">최승범 · Seungbeom Choi</div>
+    <h1>임베디드부터 클라우드까지,<br>한 사이클을 직접 만드는 개발자</h1>
+    <div class="badges">
+      <span class="b">K-Digital Training IoT 최우수상</span><span class="sep">·</span>
+      <span class="b">팀 프로젝트 팀장 3건</span><span class="sep">·</span>
+      <span class="b">라이브 웹 서비스 운영</span>
+    </div>
+    <div class="btns">
+      <a class="btn btn-solid" href="https://github.com/SeungbeomChoi1214" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <a class="btn btn-ghost" href="https://linkedin.com/in/seungbeom-choi" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.6 0H2.4A2.4 2.4 0 000 2.4v11.2A2.4 2.4 0 002.4 16h11.2a2.4 2.4 0 002.4-2.4V2.4A2.4 2.4 0 0013.6 0zM5 13H3V6h2v7zM4 5a1.2 1.2 0 110-2.4A1.2 1.2 0 014 5zm9 8h-2V9.4c0-.86-.02-1.96-1.2-1.96-1.2 0-1.38.94-1.38 1.9V13H6.4V6h1.92v.96h.03c.27-.5.92-1.04 1.9-1.04 2.03 0 2.4 1.34 2.4 3.08V13z"/></svg>
+        LinkedIn
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ② About -->
+<section class="about">
+  <div class="wrap">
+    <div class="sec-label" data-num="01">About</div>
+    <div class="about-card reveal">
+      <p>센서 하나부터 라이브 서비스까지, 시작한 건 직접 끝까지 책임집니다.</p>
+      <p>개발에서 막히는 일은 늘 있지만, 시간을 들여 끝내 풀어냅니다.</p>
+      <p>아는 건 실제로 적용하고, 모르는 건 바로 배웁니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ③ 핵심 프로젝트 -->
+<section>
+  <div class="wrap">
+    <div class="sec-label" data-num="02">Key Projects</div>
+
+    <!-- PyeonipCheck (간판 1) -->
+    <article class="proj feature reveal">
+      <div class="proj-media" data-tabs>
+        <div class="tabs" role="tablist">
+          <button class="tab active">대학 선택</button>
+          <button class="tab">점수 입력</button>
+          <button class="tab">결과 리포트</button>
+        </div>
+        <div class="tab-panel active">
+          <div class="frame"><div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="frame-body"><img src="assets/pyeonipcheck.png" data-zoom alt="PyeonipCheck 대학·계열 선택 화면"></div></div>
+        </div>
+        <div class="tab-panel">
+          <div class="frame"><div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="frame-body"><img src="assets/pyeonipcheck-2.png" data-zoom alt="PyeonipCheck 점수 입력 화면"></div></div>
+        </div>
+        <div class="tab-panel">
+          <div class="frame"><div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="frame-body"><img src="assets/pyeonipcheck-3.png" data-zoom alt="PyeonipCheck 합격예측 결과 리포트"></div></div>
+        </div>
+      </div>
+      <div class="proj-text">
+        <div class="proj-head"><h3>PyeonipCheck-Web</h3><span class="st done">완료</span></div>
+        <div class="proj-tag">라이브 운영 후 비용 최적화로 종료 · 2025.11–2026.02</div>
+        <div class="blocks">
+          <div class="block"><div class="k">배경</div><div class="v">편입 준비생은 학교마다 흩어진 모집요강과 합격선을 일일이 찾아야 하는 정보 비대칭이 큰 영역. 그 불편을 직접 풀고 싶어 시작.</div></div>
+          <div class="block"><div class="k">설계</div><div class="v"><span class="count" data-target="44">44</span>개 대학 모집요강 PDF 파싱 → 합격선 계산 → 결과 대시보드까지 백엔드·프론트·배포를 1인으로 설계.</div></div>
+          <div class="block"><div class="k">장애 대응</div><div class="v">실사용자 접속 중 데이터 오류가 발생하자, 서버 재배포 리스크를 피해 "즉시 차단 vs 근본 수정"으로 나눠 사용자 영향 최소화를 우선.</div></div>
+          <div class="block"><div class="k">배운 점</div><div class="v">급할 때 우선 막는 것과 제대로 고치는 것은 다른 결정이며, 라이브에선 그 우선순위를 직접 판단해야 한다는 걸 체득.</div></div>
+        </div>
+        <div class="verify">
+          <div class="k">실사용자 검증</div>
+          <div class="verify-stats">
+            <div class="stat"><span class="count" data-target="188">188</span><span>활성 사용자</span></div>
+            <div class="stat"><span class="count" data-target="186">186</span><span>신규 유입</span></div>
+          </div>
+          <p>같은 학교 편입생을 타깃으로 운영해 유입 경로가 분명했고, 실제 사용자가 들어왔습니다.</p>
+          <div class="frame"><div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="frame-body"><img src="assets/ga.png" data-zoom alt="Google Analytics — 활성 사용자 188, 신규 186"></div></div>
+        </div>
+        <div class="proj-foot">
+          <span class="stack">FastAPI · React · AWS · SQLite</span>
+          <a class="repo" href="https://github.com/SeungbeomChoi1214/PyeonipCheck-Web" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            Repository
+          </a>
+        </div>
+      </div>
+    </article>
+
+    <!-- SmartFactory (간판 2) -->
+    <article class="proj feature flip reveal">
+      <div class="proj-media" data-tabs>
+        <div class="tabs" role="tablist">
+          <button class="tab active">아키텍처</button>
+          <button class="tab">대시보드</button>
+          <button class="tab">하드웨어</button>
+          <button class="tab">트러블슈팅</button>
+        </div>
+        <div class="tab-panel active">
+          <div class="frame"><div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="frame-body"><img src="assets/smartfactory-arch.png" data-zoom alt="SmartFactory 시스템 아키텍처 다이어그램"></div></div>
+        </div>
+        <div class="tab-panel">
+          <div class="gallery">
+            <div class="g-item"><img src="assets/smartfactory-dash.png" data-zoom alt="SmartFactory 관제(Control) 화면"></div>
+            <div class="g-item"><img src="assets/smartfactory-dash2.png" data-zoom alt="SmartFactory 로봇 맵(Robot Map) 화면"></div>
+            <div class="g-item"><img src="assets/smartfactory-dash3.png" data-zoom alt="SmartFactory 생산 분석(Analysis) 화면"></div>
+          </div>
+        </div>
+        <div class="tab-panel">
+          <div class="gallery">
+            <div class="g-item"><img src="assets/smartfactory-robot1.jpg" data-zoom alt="AGV 로봇 실물 1"></div>
+            <div class="g-item"><img src="assets/smartfactory-robot2.jpg" data-zoom alt="AGV 로봇 실물 2"></div>
+            <div class="g-item"><img src="assets/smartfactory-hw.jpg" data-zoom alt="컨베이어·분류 시스템 실물"></div>
+          </div>
+        </div>
+        <div class="tab-panel">
+          <div class="frame"><div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="frame-body"><img src="assets/smartfactory-trouble.jpg" data-zoom alt="오실로스코프로 신호 파형 확인"></div></div>
+          <p class="panel-cap">신호가 의심될 때 오실로스코프로 직접 파형을 확인하며 원인을 좁혔습니다. 화면이 아니라 하드웨어를 직접 만지며 해결한 부분입니다.</p>
+        </div>
+      </div>
+      <div class="proj-text">
+        <div class="proj-head"><h3>SmartFactory-AIoT</h3><span class="st done">완료 · 최우수상</span></div>
+        <div class="proj-tag">K-Digital Training IoT 스마트융합 최우수상 · 5인 팀장</div>
+        <div class="blocks">
+          <div class="block"><div class="k">결과</div><div class="v">oneM2M(Mobius 4.0) 기반 AGV 자율순찰과 YOLOv8 분류를 통합한 스마트팩토리 시스템. 팀장으로 5인 팀을 이끌어 최우수상 수상.</div></div>
+          <div class="block"><div class="k">판단</div><div class="v">서브시스템을 Hub&amp;Spoke로 느슨하게 결합해 디바이스마다 독립적으로 동작·확장할 수 있는 구조를 선택.</div></div>
+          <div class="block"><div class="k">배운 점</div><div class="v">결합도를 낮추는 구조가 전체 안정성을 좌우.</div></div>
+        </div>
+        <div class="proj-foot">
+          <span class="stack">RPi5 · Mobius(oneM2M) · YOLOv8 · PostgreSQL · MQTT</span>
+          <a class="repo" href="https://github.com/SeungbeomChoi1214/SmartFactory-AIoT" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            Repository
+          </a>
+        </div>
+      </div>
+    </article>
+
+    <!-- PostureGuard (캡스톤 승격) -->
+    <article class="proj compact reveal">
+      <div class="proj-media" data-tabs>
+        <div class="tabs" role="tablist">
+          <button class="tab active">대시보드</button>
+          <button class="tab">하드웨어</button>
+          <button class="tab">도면(DXF)</button>
+        </div>
+        <div class="tab-panel active">
+          <div class="frame"><div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="frame-body"><img src="assets/postureguard.png" data-zoom alt="PostureGuard 대시보드(실시간 자세·앉은 무게 분포)"></div></div>
+        </div>
+        <div class="tab-panel">
+          <div class="gallery">
+            <div class="g-item"><img src="assets/postureguard-hw1.png" data-zoom alt="FSR 매트 배선"></div>
+            <div class="g-item"><img src="assets/postureguard-hw2.png" data-zoom alt="FSR 압력 매트 테스트"></div>
+          </div>
+        </div>
+        <div class="tab-panel">
+          <div class="frame"><div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="frame-body"><img src="assets/postureguard-dxf.png" data-zoom alt="16채널 FSR 센서 매트 발주용 DXF 도면"></div></div>
+          <p class="panel-cap">센서 매트 제작을 위해 직접 그린 발주용 도면.</p>
+        </div>
+      </div>
+      <div class="proj-text">
+        <div class="proj-head"><h3>PostureGuard</h3><span class="st prog">진행중</span></div>
+        <div class="proj-tag">캡스톤디자인 · 진행중</div>
+        <div class="blocks">
+          <div class="block"><div class="k">결과</div><div class="v">ESP32와 16채널 FSR 압력 매트, MediaPipe 카메라를 센서 퓨전해 앉은 자세를 실시간으로 추정하는 캡스톤. 센서 매트부터 백엔드·대시보드까지 직접 제작. (진행중)</div></div>
+          <div class="block"><div class="k">판단</div><div class="v">압력은 하체, 카메라는 상체에서 각각 놓치는 부분이 있어 두 신호를 합쳐 서로의 약한 구간을 보완하도록 설계.</div></div>
+          <div class="block"><div class="k">배운 점</div><div class="v">서로 다른 센서를 한 점수로 합칠 때 각 신호를 언제 얼마나 믿을지, 기준을 정하는 게 핵심.</div></div>
+        </div>
+        <div class="proj-foot">
+          <span class="stack">ESP32 · 16채널 FSR · MediaPipe · MQTT</span>
+          <span class="repo muted">비공개 저장소</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- Workbench -->
+    <article class="proj compact flip reveal">
+      <div class="proj-media" data-tabs>
+        <div class="tabs" role="tablist">
+          <button class="tab active">대시보드</button>
+          <button class="tab">토큰 추적</button>
+        </div>
+        <div class="tab-panel active">
+          <div class="frame"><div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="frame-body"><img src="assets/workbench.png" data-zoom alt="Workbench 데스크톱 대시보드 홈"></div></div>
+        </div>
+        <div class="tab-panel">
+          <div class="frame"><div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="frame-body"><img src="assets/workbench-token.png" data-zoom alt="Workbench Claude 토큰 추적 위젯"></div></div>
+        </div>
+      </div>
+      <div class="proj-text">
+        <div class="proj-head"><h3>Workbench</h3><span class="st prog">진행중</span></div>
+        <div class="proj-tag">개인 프로젝트 · 2026.05–</div>
+        <div class="blocks">
+          <div class="block"><div class="k">결과</div><div class="v">AWS 비용·GitHub 활동·AI 토큰·일정 등 6개 소스를 한 화면에 모은 PyQt6 데스크톱 대시보드.</div></div>
+          <div class="block"><div class="k">판단</div><div class="v">기능을 늘리기보다 매일 실제로 쓰는 것만 남기는 쪽으로 정리하며 운영.</div></div>
+          <div class="block"><div class="k">배운 점</div><div class="v">추정값이 맞는지 실제 데이터와 대조하며, 숫자는 직접 검증해야 믿을 수 있다는 걸 확인.</div></div>
+        </div>
+        <div class="proj-foot">
+          <span class="stack">Python · PyQt6 · SQLite · AWS</span>
+          <span class="repo muted">비공개 저장소</span>
+        </div>
+      </div>
+    </article>
+
+    <!-- 한이음 -->
+    <article class="proj compact reveal">
+      <div class="proj-media" data-tabs>
+        <div class="tabs" role="tablist">
+          <button class="tab active">아키텍처</button>
+          <button class="tab">대시보드</button>
+          <button class="tab">CSI 신호</button>
+        </div>
+        <div class="tab-panel active">
+          <div class="frame"><div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="frame-body"><img src="assets/hanium-arch.png" data-zoom alt="한이음 4-Layer 아키텍처 다이어그램"></div></div>
+        </div>
+        <div class="tab-panel">
+          <div class="frame"><div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="frame-body"><img src="assets/hanium-dash.png" data-zoom alt="한이음 모니터링 대시보드"></div></div>
+        </div>
+        <div class="tab-panel">
+          <div class="frame"><div class="frame-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="frame-body"><img src="assets/hanium-csi.png" data-zoom alt="한이음 WiFi CSI 신호 로그"></div></div>
+        </div>
+      </div>
+      <div class="proj-text">
+        <div class="proj-head"><h3>한이음 — WiFi CSI 생명안전 플랫폼</h3><span class="st prog">진행중</span></div>
+        <div class="proj-tag">4인 팀장 · 현대자동차 현업자 멘토링 · 2026.04–10</div>
+        <div class="blocks">
+          <div class="block"><div class="k">결과</div><div class="v">WiFi CSI 전파와 Vision AI로 독거노인의 낙상·이상을 L1~L3 단계로 경보하는 생명안전 플랫폼. (진행중)</div></div>
+          <div class="block"><div class="k">판단</div><div class="v">프라이버시·사각 영역은 CSI로, 개방 공간은 Vision으로 — 환경에 맞춰 센싱 모드를 전환하는 하이브리드 구조.</div></div>
+          <div class="block"><div class="k">배운 점</div><div class="v">엣지→네트워크→클라우드 계층을 분리하고, 경보를 단계화하는 설계를 직접 잡아가는 중.</div></div>
+        </div>
+        <div class="proj-foot">
+          <span class="stack">ESP32-S3(CSI) · AWS IoT Core · EC2 · TimescaleDB</span>
+          <span class="repo muted">비공개 저장소</span>
+        </div>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<!-- ④ 활동·리더십 -->
+<section>
+  <div class="wrap">
+    <div class="sec-label" data-num="03">Experience &amp; Activities</div>
+    <ul class="acts reveal">
+      <li>
+        <div class="act-h"><span class="act-t">팀 프로젝트 팀장·PM</span><span class="act-meta">SmartFactory 5인 · 한이음 4인 · 캡스톤디자인</span></div>
+        <p>좋아하는 프로젝트는 주인의식으로 팀장을 자처했고, 팀원마다 막히는 지점이 달라 상황에 맞게 같이 들여다보며 팀이 멈추지 않게 조율했습니다.</p>
+      </li>
+      <li>
+        <div class="act-h"><span class="act-t">창업동아리 팀장 (2년차)</span><span class="act-meta">2025 편입플래너 · 2026 RE:VERSE (AI 에이전트 + 3D 프린팅)</span></div>
+        <p>2년 연속 팀을 이끌며 아이디어를 직접 기획하고 끝까지 운영하고 있습니다.</p>
+      </li>
+      <li>
+        <div class="act-h"><span class="act-t">IoT 교재 공동 집필 참여 (진행 중)</span><span class="act-meta">허윤석 교수님</span></div>
+        <p>IoT Platform·실습 중심 교재를 학생 눈높이로 보강하는 작업에 참여.</p>
+      </li>
+      <li>
+        <div class="act-h"><span class="act-t">Champions Martial Arts (NY, USA) 강사</span><span class="act-meta">2021.12–2022.03</span></div>
+        <p>현지에서 수강생을 직접 지도하며 상대 수준에 맞춰 설명하는 법을 익혔습니다.</p>
+      </li>
+      <li>
+        <div class="act-h"><span class="act-t">공군 제15특수임무비행단 복무</span><span class="act-meta">성남 · 2022.03–2023.12</span></div>
+        <p>약 2년간 복무하며 맡은 일을 끝까지 마무리하는 태도를 다졌습니다.</p>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- ⑤ 그 외 작업 -->
+<section>
+  <div class="wrap">
+    <div class="sec-label" data-num="04">Other Works</div>
+    <div class="chips" data-filter>
+      <button class="chip active" data-f="all">전체</button>
+      <button class="chip" data-f="done">완료</button>
+      <button class="chip" data-f="prog">진행중</button>
+    </div>
+    <div class="mini-grid">
+
+      <div class="mini reveal" data-status="done">
+        <div class="mini-thumb empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 9h18"/></svg></div>
+        <div class="mini-body">
+          <div class="mini-head"><h4>IoT-Smart-Styler</h4><span class="st done">완료</span></div>
+          <div class="mini-desc">라즈베리파이 기반 스마트 의류관리 PoC — NFC 자동모드 인식 + MQTT 양방향 제어. 4인 H/W 리드.</div>
+          <div class="mini-foot"><a class="repo" href="https://github.com/SeungbeomChoi1214/IoT-Smart-Styler" target="_blank" rel="noopener">GitHub ↗</a></div>
+        </div>
+      </div>
+
+      <div class="mini reveal" data-status="done">
+        <div class="mini-thumb empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 6l-5 6 5 6M16 6l5 6-5 6"/></svg></div>
+        <div class="mini-body">
+          <div class="mini-head"><h4>iot-sensor-manager (C)</h4><span class="st done">완료</span></div>
+          <div class="mini-desc">C 콘솔 프로그램 — 엣지 센서 데이터를 로컬에서 입력·검색·통계(Z-score 이상치 감지)하고 파일로 영속화.</div>
+          <div class="mini-foot"><span class="repo muted">비공개 저장소</span></div>
+        </div>
+      </div>
+
+      <div class="mini reveal" data-status="done">
+        <div class="mini-thumb"><img src="assets/backup-cloudwatch.png" alt="CloudWatch vault-sync 로그 썸네일"></div>
+        <div class="mini-body">
+          <div class="mini-head"><h4>개인 지식 백업 자동화</h4><span class="st done">완료</span></div>
+          <div class="mini-desc">AWS S3 · IAM 최소권한 분리 · rclone를 구성하고 매일 자동 동기화. (Lambda vault-sync 운영)</div>
+          <div class="mini-foot"><span class="repo muted">인프라 · CloudWatch 검증</span></div>
+        </div>
+      </div>
+
+      <div class="mini reveal" data-status="prog">
+        <div class="mini-thumb empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3a4 4 0 00-4 4 3 3 0 00-1 5.8V15a3 3 0 003 3h4a3 3 0 003-3v-2.2A3 3 0 0016 7a4 4 0 00-4-4z"/></svg></div>
+        <div class="mini-body">
+          <div class="mini-head"><h4>subbrain</h4><span class="st prog">진행중</span></div>
+          <div class="mini-desc">노션 맥락을 RAG로 참조해 답하는 로컬 CLI 분신 — 임베딩·벡터검색을 프레임워크 없이 직접 구현(Phase 1).</div>
+          <div class="mini-foot"><span class="repo muted">비공개 저장소</span></div>
+        </div>
+      </div>
+
+      <div class="mini reveal" data-status="prog">
+        <div class="mini-thumb empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12a9 9 0 11-3-6.7M21 4v4h-4"/></svg></div>
+        <div class="mini-body">
+          <div class="mini-head"><h4>RE:VERSE</h4><span class="st prog">진행중</span></div>
+          <div class="mini-desc">3D 프린트팜 수주관리 시스템 — AI 에이전트 + 3D 프린팅 결합. 창업동아리 팀장(2년차).</div>
+          <div class="mini-foot"><span class="repo muted">비공개 저장소</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ⑥ 클로징 -->
+<section class="closing">
+  <div class="wrap">
+    <div class="sec-label" data-num="05">Closing</div>
+    <h2 class="reveal">엣지에서 클라우드까지, 한 사이클을 직접 만들어 온 경험으로 — 함께 만들어갈 팀에서 이어가고 싶습니다.</h2>
+    <div class="contact reveal">
+      <button class="btn btn-solid" type="button" id="emailCopy" data-email="chltmdqja01@gmail.com">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="3" width="13" height="10" rx="1"/><path d="M2 4l6 4.5L14 4"/></svg>
+        <span id="emailLabel">chltmdqja01@gmail.com</span>
+      </button>
+      <a class="btn btn-ghost" href="https://github.com/SeungbeomChoi1214" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+      <a class="btn btn-ghost" href="https://linkedin.com/in/seungbeom-choi" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.6 0H2.4A2.4 2.4 0 000 2.4v11.2A2.4 2.4 0 002.4 16h11.2a2.4 2.4 0 002.4-2.4V2.4A2.4 2.4 0 0013.6 0zM5 13H3V6h2v7zM4 5a1.2 1.2 0 110-2.4A1.2 1.2 0 014 5zm9 8h-2V9.4c0-.86-.02-1.96-1.2-1.96-1.2 0-1.38.94-1.38 1.9V13H6.4V6h1.92v.96h.03c.27-.5.92-1.04 1.9-1.04 2.03 0 2.4 1.34 2.4 3.08V13z"/></svg>
+        LinkedIn
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">© 2026 최승범 · Portfolio</div>
+</footer>
+
+<!-- 라이트박스 -->
+<div class="lightbox" id="lightbox">
+  <span class="lb-close" id="lbClose"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3l10 10M13 3L3 13"/></svg></span>
+  <img id="lbImg" src="" alt="">
+</div>
+
+<script>
+  // 핵심 프로젝트 탭 전환 — 텍스트(결과/판단/배운점)는 탭과 무관하게 항상 노출
+  document.querySelectorAll('[data-tabs]').forEach(function(group){
+    var tabs = group.querySelectorAll('.tab');
+    var panels = group.querySelectorAll('.tab-panel');
+    tabs.forEach(function(tab, i){
+      tab.addEventListener('click', function(){
+        tabs.forEach(function(t){ t.classList.remove('active'); });
+        panels.forEach(function(p){ p.classList.remove('active'); });
+        tab.classList.add('active');
+        if (panels[i]) panels[i].classList.add('active');
+      });
+    });
+  });
+
+  // 스크롤 진행바
+  var progress = document.getElementById('progress');
+  function onScroll(){
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var sc = h.scrollTop || document.body.scrollTop;
+    progress.style.width = (max > 0 ? (sc / max * 100) : 0) + '%';
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll);
+  onScroll();
+
+  // 스크롤 fade-up — 1회만, prefers-reduced-motion·미지원 시 즉시 표시
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var reveals = document.querySelectorAll('.reveal');
+  if (reduce || !('IntersectionObserver' in window)) {
+    reveals.forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, {threshold:0.12, rootMargin:'0px 0px -8% 0px'});
+    reveals.forEach(function(el){ io.observe(el); });
+  }
+
+  // 숫자 카운트업 (뷰 진입 시 0→목표, 1회) — reduced-motion·미지원 시 목표값 유지
+  var counts = document.querySelectorAll('.count');
+  function runCount(el){
+    var target = +el.getAttribute('data-target');
+    var dur = 900, t0 = null;
+    el.textContent = '0';
+    function step(ts){
+      if (!t0) t0 = ts;
+      var p = Math.min((ts - t0) / dur, 1);
+      el.textContent = Math.round(p * target);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  if (!reduce && 'IntersectionObserver' in window) {
+    var cio = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if (e.isIntersecting) { runCount(e.target); cio.unobserve(e.target); } });
+    }, {threshold:1, rootMargin:'0px 0px -10% 0px'});
+    counts.forEach(function(el){ cio.observe(el); });
+  }
+  // (reduced-motion·미지원 시 HTML에 박힌 목표 숫자 그대로 노출)
+
+  // 그 외 작업 필터칩 (전체/완료/진행중)
+  document.querySelectorAll('[data-filter]').forEach(function(group){
+    var chips = group.querySelectorAll('.chip');
+    var minis = document.querySelectorAll('.mini-grid .mini');
+    chips.forEach(function(chip){
+      chip.addEventListener('click', function(){
+        chips.forEach(function(c){ c.classList.remove('active'); });
+        chip.classList.add('active');
+        var f = chip.getAttribute('data-f');
+        minis.forEach(function(m){
+          var ok = (f === 'all') || (m.getAttribute('data-status') === f);
+          m.classList.toggle('hide', !ok);
+        });
+      });
+    });
+  });
+
+  // 라이트박스 (스샷 클릭 확대)
+  var lb = document.getElementById('lightbox');
+  var lbImg = document.getElementById('lbImg');
+  function openLb(src, alt){ lbImg.src = src; lbImg.alt = alt || ''; lb.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  function closeLb(){ lb.classList.remove('open'); lbImg.src = ''; document.body.style.overflow = ''; }
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    var img = t.closest ? t.closest('img[data-zoom]') : null;
+    if (img) { openLb(img.getAttribute('src'), img.getAttribute('alt')); return; }
+    if (t === lb || (t.closest && t.closest('#lbClose'))) { closeLb(); }
+  });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeLb(); });
+
+  // 이메일 — 클릭 시 주소를 클립보드로 복사(+"복사됨" 피드백). 메일앱 팝업 없음.
+  // 복사 미지원/실패해도 주소 텍스트는 그대로 보이므로 폴백 OK.
+  var emailBtn = document.getElementById('emailCopy');
+  if (emailBtn) {
+    var emailLabel = document.getElementById('emailLabel');
+    var addr = emailBtn.getAttribute('data-email');
+    var resetTimer = null;
+    function showCopied(){
+      emailLabel.textContent = '복사됨';
+      if (resetTimer) clearTimeout(resetTimer);
+      resetTimer = setTimeout(function(){ emailLabel.textContent = addr; }, 1400);
+    }
+    function legacyCopy(){
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = addr; ta.setAttribute('readonly',''); ta.style.position = 'absolute'; ta.style.left = '-9999px';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        showCopied();
+      } catch (e) { /* 복사 실패 — 주소 텍스트가 보이니 그대로 둠 */ }
+    }
+    emailBtn.addEventListener('click', function(){
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(addr).then(showCopied).catch(legacyCopy);
+      } else {
+        legacyCopy();
+      }
+    });
+  }
+</script>
+
+</body>
+</html>
